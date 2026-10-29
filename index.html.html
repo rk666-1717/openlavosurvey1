@@ -1,0 +1,648 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>オープンLABO ゲーミフィケーションアンケート</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+  <!-- アニメーションライブラリ canvas-confetti -->
+  <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.9.2/dist/confetti.browser.min.js"></script>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;600;700;900&display=swap');
+    body {
+      font-family: 'Noto Sans JP', sans-serif;
+      background: #0f172a;
+      color: #f8fafc;
+      touch-action: manipulation;
+    }
+    
+    /* カードアニメーション */
+    .slide-in {
+      animation: slideIn 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+    }
+    @keyframes slideIn {
+      from { opacity: 0; transform: translateY(20px) scale(0.98); }
+      to { opacity: 1; transform: translateY(0) scale(1); }
+    }
+
+    /* 選択肢ボタンのタップ効果 */
+    .option-btn {
+      transition: all 0.2s ease;
+      position: relative;
+      overflow: hidden;
+    }
+    .option-btn:active {
+      transform: scale(0.97);
+    }
+    .option-btn.selected {
+      border-color: #6366f1 !important;
+      background-color: rgba(99, 102, 241, 0.15) !important;
+      box-shadow: 0 0 15px rgba(99, 102, 241, 0.4);
+    }
+
+    /* 個人用錬成カードのポップアップ */
+    .forge-card {
+      animation: popIn 0.3s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+    }
+    @keyframes popIn {
+      from { transform: scale(0.8); opacity: 0; }
+      to { transform: scale(1); opacity: 1; }
+    }
+  </style>
+</head>
+<body class="min-h-screen flex flex-col justify-between items-center p-3 sm:p-6 max-w-lg mx-auto">
+
+  <!-- 上部ステータスバー＆プログレス -->
+  <header class="w-full mb-4">
+    <div class="flex justify-between items-center text-xs font-bold text-slate-400 mb-2">
+      <span class="flex items-center gap-1.5 text-indigo-400">
+        <i class="fa-solid fa-flask-vial"></i> オープンLABO アンケート
+      </span>
+      <span id="progressText" class="bg-indigo-950 text-indigo-300 px-2.5 py-0.5 rounded-full border border-indigo-800">
+        STAGE 1 / 5
+      </span>
+    </div>
+    <!-- プログレスバー -->
+    <div class="w-full bg-slate-800 h-2 rounded-full overflow-hidden border border-slate-700">
+      <div id="progressBar" class="bg-gradient-to-r from-indigo-500 to-purple-500 h-full w-1/5 transition-all duration-500"></div>
+    </div>
+  </header>
+
+  <!-- メイン回答カードエリア -->
+  <main id="appContainer" class="w-full flex-grow flex flex-col justify-center relative">
+    
+    <!-- STAGE 1: 今日のワクワク度判定 -->
+    <div id="stage1" class="stage-card slide-in bg-slate-800/90 border border-slate-700 rounded-2xl p-5 shadow-2xl backdrop-blur-md">
+      <div class="flex items-center gap-2 mb-3">
+        <span class="bg-blue-600 text-white text-xs font-black px-2.5 py-1 rounded-md">STAGE 1</span>
+        <h2 class="text-xs font-bold text-slate-400">ウォーミングアップ</h2>
+      </div>
+      <h1 class="text-base font-bold text-white mb-4 leading-snug">
+        【問い】 AIアプリ作成の実演を見て、直感的にどう感じましたか？
+      </h1>
+
+      <!-- 演出ビジュアル：個人用ワクワクチャージメーター -->
+      <div class="bg-slate-900 border border-slate-700/80 rounded-xl p-4 mb-5 text-center relative overflow-hidden">
+        <div class="text-xs text-slate-400 font-bold mb-1"><i class="fa-solid fa-bolt text-amber-400 mr-1"></i>あなたのAIワクワクチャージ</div>
+        <div class="text-3xl font-black text-transparent bg-clip-text bg-gradient-to-r from-blue-400 to-purple-400 my-1" id="gaugeNum">
+          0%
+        </div>
+        <div class="w-full bg-slate-800 h-3 rounded-full overflow-hidden border border-slate-700">
+          <div id="gaugeBar" class="h-full bg-gradient-to-r from-blue-500 via-indigo-500 to-purple-500 w-0 transition-all duration-700 ease-out"></div>
+        </div>
+      </div>
+
+      <!-- 選択肢 -->
+      <div class="space-y-2.5">
+        <button onclick="selectStage1('magic', this)" class="option-btn w-full p-3.5 bg-slate-700/60 hover:bg-slate-700 border border-slate-600 rounded-xl text-left text-xs sm:text-sm font-bold flex items-center gap-3">
+          <span class="text-xl">🚀</span>
+          <span>「魔法みたい！」自分でも作ってみたい</span>
+        </button>
+        <button onclick="selectStage1('potential', this)" class="option-btn w-full p-3.5 bg-slate-700/60 hover:bg-slate-700 border border-slate-600 rounded-xl text-left text-xs sm:text-sm font-bold flex items-center gap-3">
+          <span class="text-xl">💡</span>
+          <span>可能性は感じるが、自校の制限が気になる</span>
+        </button>
+        <button onclick="selectStage1('calm', this)" class="option-btn w-full p-3.5 bg-slate-700/60 hover:bg-slate-700 border border-slate-600 rounded-xl text-left text-xs sm:text-sm font-bold flex items-center gap-3">
+          <span class="text-xl">☕</span>
+          <span>なるほど〜と静かに感心した</span>
+        </button>
+        <button onclick="selectStage1('scared', this)" class="option-btn w-full p-3.5 bg-slate-700/60 hover:bg-slate-700 border border-slate-600 rounded-xl text-left text-xs sm:text-sm font-bold flex items-center gap-3">
+          <span class="text-xl">😨</span>
+          <span>AIを活用するのはまだ怖い…</span>
+        </button>
+      </div>
+
+      <button id="btnStage1" onclick="nextStage(2)" disabled class="w-full mt-5 py-3 rounded-xl bg-slate-700 text-slate-500 font-bold text-sm transition-all flex items-center justify-center gap-2">
+        <span>次へ進む</span> <i class="fa-solid fa-arrow-right"></i>
+      </button>
+    </div>
+
+    <!-- STAGE 2: あなたの学校の「壁」をぶっ壊すなら？ -->
+    <div id="stage2" class="stage-card hidden bg-slate-800/90 border border-slate-700 rounded-2xl p-5 shadow-2xl backdrop-blur-md">
+      <div class="flex items-center gap-2 mb-3">
+        <span class="bg-amber-600 text-white text-xs font-black px-2.5 py-1 rounded-md">STAGE 2</span>
+        <h2 class="text-xs font-bold text-slate-400">制限の可視化（複数選択可）</h2>
+      </div>
+      <h1 class="text-base font-bold text-white mb-3 leading-snug">
+        【問い】 AI利用を阻む「一番高い壁」はどれ？
+      </h1>
+
+      <!-- 演出ビジュアル：リアル物理クラッシュCanvas -->
+      <div class="bg-slate-900 border border-slate-700/80 rounded-xl p-3 mb-4 text-center">
+        <div class="text-xs text-amber-400 font-bold mb-1 flex items-center justify-center gap-1">
+          <i class="fa-solid fa-hammer"></i> 選択肢をタップして「学校の壁」を壊そう！
+        </div>
+        <div class="relative w-full h-32 overflow-hidden rounded-lg bg-slate-950 flex items-center justify-center border border-slate-800">
+          <canvas id="wallCanvas" class="w-full h-full"></canvas>
+        </div>
+      </div>
+
+      <!-- 選択肢 -->
+      <div class="space-y-2">
+        <button onclick="toggleStage2(0, this)" class="option-btn w-full p-3 bg-slate-700/60 hover:bg-slate-700 border border-slate-600 rounded-xl text-left text-xs font-bold flex items-center gap-2.5">
+          <i class="fa-solid fa-lock text-amber-500"></i>
+          <span>セキュリティ＆個人情報の鉄壁</span>
+        </button>
+        <button onclick="toggleStage2(1, this)" class="option-btn w-full p-3 bg-slate-700/60 hover:bg-slate-700 border border-slate-600 rounded-xl text-left text-xs font-bold flex items-center gap-2.5">
+          <i class="fa-solid fa-network-wired text-amber-500"></i>
+          <span>アクセス制限のネットワークの壁</span>
+        </button>
+        <button onclick="toggleStage2(2, this)" class="option-btn w-full p-3 bg-slate-700/60 hover:bg-slate-700 border border-slate-600 rounded-xl text-left text-xs font-bold flex items-center gap-2.5">
+          <i class="fa-solid fa-face-dizzy text-amber-500"></i>
+          <span>「難しそう…」という心理的・操作の壁</span>
+        </button>
+        <button onclick="toggleStage2(3, this)" class="option-btn w-full p-3 bg-slate-700/60 hover:bg-slate-700 border border-slate-600 rounded-xl text-left text-xs font-bold flex items-center gap-2.5">
+          <i class="fa-solid fa-shield-halved text-amber-500"></i>
+          <span>精度・誤情報（ウソ）という信頼性の壁</span>
+        </button>
+        <button onclick="toggleStage2(4, this)" class="option-btn w-full p-3 bg-slate-700/60 hover:bg-slate-700 border border-slate-600 rounded-xl text-left text-xs font-bold flex items-center gap-2.5">
+          <i class="fa-solid fa-wand-magic-sparkles text-amber-500"></i>
+          <span>特に壁はない！自由に使える</span>
+        </button>
+      </div>
+
+      <button id="btnStage2" onclick="nextStage(3)" disabled class="w-full mt-4 py-3 rounded-xl bg-slate-700 text-slate-500 font-bold text-sm transition-all flex items-center justify-center gap-2">
+        <span>次へ進む</span> <i class="fa-solid fa-arrow-right"></i>
+      </button>
+    </div>
+
+    <!-- STAGE 3: 欲しいアプリを錬成せよ！ -->
+    <div id="stage3" class="stage-card hidden bg-slate-800/90 border border-slate-700 rounded-2xl p-5 shadow-2xl backdrop-blur-md">
+      <div class="flex items-center gap-2 mb-2">
+        <span class="bg-emerald-600 text-white text-xs font-black px-2.5 py-1 rounded-md">STAGE 3</span>
+        <h2 class="text-xs font-bold text-slate-400">アプリアイデア（複数選択可）</h2>
+      </div>
+      <h1 class="text-base font-bold text-white mb-3 leading-snug">
+        【問い】 「こんなアプリがあったら神！」と思うものは？
+      </h1>
+
+      <!-- 演出ビジュアル：個人アプリカード錬成ディスプレイ -->
+      <div id="forgeBox" class="relative bg-slate-900 border border-slate-700/80 rounded-xl p-3 mb-3 min-h-[80px] flex flex-wrap items-center justify-center gap-2">
+        <span id="forgePlaceholder" class="text-xs text-slate-500 font-bold">✨ 選んだアプリアイデアがここに生成されます</span>
+      </div>
+
+      <!-- 選択肢 -->
+      <div class="space-y-2 mb-3">
+        <button onclick="toggleStage3(0, this)" class="option-btn w-full p-2.5 bg-slate-700/60 hover:bg-slate-700 border border-slate-600 rounded-xl text-left text-xs font-bold flex items-center gap-2">
+          <span class="text-base">💰</span>
+          <span>学校徴収金管理（未納自動チェック）</span>
+        </button>
+        <button onclick="toggleStage3(1, this)" class="option-btn w-full p-2.5 bg-slate-700/60 hover:bg-slate-700 border border-slate-600 rounded-xl text-left text-xs font-bold flex items-center gap-2">
+          <span class="text-base">⏱️</span>
+          <span>服務・勤務管理（年休残数スマート化）</span>
+        </button>
+        <button onclick="toggleStage3(2, this)" class="option-btn w-full p-2.5 bg-slate-700/60 hover:bg-slate-700 border border-slate-600 rounded-xl text-left text-xs font-bold flex items-center gap-2">
+          <span class="text-base">📦</span>
+          <span>備品・施設予約（スマホで空き状況予約）</span>
+        </button>
+        <button onclick="toggleStage3(3, this)" class="option-btn w-full p-2.5 bg-slate-700/60 hover:bg-slate-700 border border-slate-600 rounded-xl text-left text-xs font-bold flex items-center gap-2">
+          <span class="text-base">💬</span>
+          <span>校内事務FAQチャットボット</span>
+        </button>
+      </div>
+
+      <!-- 自由投稿 -->
+      <div class="flex gap-2">
+        <input type="text" id="freeInput" placeholder="💡 その他のアイデアを自由入力..." class="flex-grow bg-slate-900 border border-slate-600 rounded-xl px-3 py-2 text-xs font-bold text-white focus:outline-none focus:border-emerald-500">
+        <button onclick="addCustomForge()" class="bg-emerald-600 hover:bg-emerald-500 text-white font-bold px-3 py-2 rounded-xl text-xs flex items-center gap-1 shrink-0">
+          <i class="fa-solid fa-plus"></i> 追加
+        </button>
+      </div>
+
+      <button id="btnStage3" onclick="nextStage(4)" class="w-full mt-4 py-3 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white font-bold text-sm shadow-lg shadow-indigo-600/30 transition-all flex items-center justify-center gap-2">
+        <span>次へ進む</span> <i class="fa-solid fa-arrow-right"></i>
+      </button>
+    </div>
+
+    <!-- STAGE 4: 生まれた「時間の余白」で何をする？ -->
+    <div id="stage4" class="stage-card hidden bg-slate-800/90 border border-slate-700 rounded-2xl p-5 shadow-2xl backdrop-blur-md">
+      <div class="flex items-center gap-2 mb-3">
+        <span class="bg-purple-600 text-white text-xs font-black px-2.5 py-1 rounded-md">STAGE 4</span>
+        <h2 class="text-xs font-bold text-slate-400">未来のビジョン</h2>
+      </div>
+      <h1 class="text-base font-bold text-white mb-3 leading-snug">
+        【問い】 業務改善で1日30分浮いたら、その時間で何がしたい？
+      </h1>
+
+      <!-- 演出ビジュアル：あなたの未来ツリー -->
+      <div class="bg-slate-900 border border-slate-700/80 rounded-xl p-3 mb-4 text-center">
+        <div class="text-xs text-purple-300 font-bold mb-1">あなたの「生み出す余白」の果実</div>
+        <div id="treeArea" class="h-20 flex items-center justify-center gap-3">
+          <i class="fa-solid fa-seedling text-4xl text-emerald-500"></i>
+          <span id="treeFruit" class="text-3xl transition-all duration-500 scale-0 opacity-0">❓</span>
+        </div>
+      </div>
+
+      <!-- 選択肢 -->
+      <div class="space-y-2.5">
+        <button onclick="selectStage4('💬', '対話の時間', this)" class="option-btn w-full p-3 bg-slate-700/60 hover:bg-slate-700 border border-slate-600 rounded-xl text-left text-xs font-bold flex items-center gap-3">
+          <span class="text-xl">💬</span>
+          <span>先生や子どもたち、保護者との対話</span>
+        </button>
+        <button onclick="selectStage4('📊', '経営・提案準備', this)" class="option-btn w-full p-3 bg-slate-700/60 hover:bg-slate-700 border border-slate-600 rounded-xl text-left text-xs font-bold flex items-center gap-3">
+          <span class="text-xl">📊</span>
+          <span>予算の工夫や学校経営への提案準備</span>
+        </button>
+        <button onclick="selectStage4('📚', 'スキルアップ', this)" class="option-btn w-full p-3 bg-slate-700/60 hover:bg-slate-700 border border-slate-600 rounded-xl text-left text-xs font-bold flex items-center gap-3">
+          <span class="text-xl">📚</span>
+          <span>研修参加やスキルアップ・リスキリング</span>
+        </button>
+        <button onclick="selectStage4('☕', '自分時間の満喫', this)" class="option-btn w-full p-3 bg-slate-700/60 hover:bg-slate-700 border border-slate-600 rounded-xl text-left text-xs font-bold flex items-center gap-3">
+          <span class="text-xl">☕</span>
+          <span>定時退勤して自分の時間を満喫！</span>
+        </button>
+      </div>
+
+      <button id="btnStage4" onclick="nextStage(5)" disabled class="w-full mt-4 py-3 rounded-xl bg-slate-700 text-slate-500 font-bold text-sm transition-all flex items-center justify-center gap-2">
+        <span>次へ進む</span> <i class="fa-solid fa-arrow-right"></i>
+      </button>
+    </div>
+
+    <!-- STAGE 5: ワンタップ評価！ -->
+    <div id="stage5" class="stage-card hidden bg-slate-800/90 border border-slate-700 rounded-2xl p-5 shadow-2xl backdrop-blur-md">
+      <div class="flex items-center gap-2 mb-3">
+        <span class="bg-pink-600 text-white text-xs font-black px-2.5 py-1 rounded-md">STAGE 5</span>
+        <h2 class="text-xs font-bold text-slate-400">フィードバック</h2>
+      </div>
+      <h1 class="text-base font-bold text-white mb-4 leading-snug text-center">
+        【問い】 今日の研究部の実演・デモアプリはいかがでしたか？
+      </h1>
+
+      <!-- 選択肢（星評価） -->
+      <div class="space-y-3 mb-4">
+        <button onclick="selectStage5(5, this)" class="option-btn w-full p-4 bg-slate-700/60 hover:bg-slate-700 border border-slate-600 rounded-xl text-center">
+          <div class="text-amber-400 text-lg mb-1">⭐⭐⭐⭐⭐</div>
+          <div class="text-xs sm:text-sm font-bold text-white">超最高！次回も絶対参加したい</div>
+        </button>
+        <button onclick="selectStage5(4, this)" class="option-btn w-full p-3.5 bg-slate-700/60 hover:bg-slate-700 border border-slate-600 rounded-xl text-center">
+          <div class="text-amber-400 text-sm mb-1">⭐⭐⭐⭐</div>
+          <div class="text-xs font-bold text-slate-200">参考になった！自分でも試す</div>
+        </button>
+        <button onclick="selectStage5(3, this)" class="option-btn w-full p-3.5 bg-slate-700/60 hover:bg-slate-700 border border-slate-600 rounded-xl text-center">
+          <div class="text-amber-400 text-xs mb-1">⭐⭐⭐</div>
+          <div class="text-xs font-bold text-slate-300">普通・今後に期待！</div>
+        </button>
+      </div>
+
+      <button id="btnStage5" onclick="finishSurvey()" disabled class="w-full py-3.5 rounded-xl bg-slate-700 text-slate-500 font-black text-sm transition-all flex items-center justify-center gap-2">
+        <i class="fa-solid fa-paper-plane"></i> 回答を送信して完了する
+      </button>
+    </div>
+
+    <!-- 完了画面（クリアバッジ演出） -->
+    <div id="stageComplete" class="stage-card hidden bg-slate-800/95 border border-slate-700 rounded-2xl p-6 shadow-2xl backdrop-blur-md text-center">
+      <div class="w-16 h-16 bg-emerald-500/20 text-emerald-400 border border-emerald-500/40 rounded-full flex items-center justify-center text-3xl mx-auto mb-4 animate-bounce">
+        <i class="fa-solid fa-award"></i>
+      </div>
+      <h1 class="text-xl font-black text-white mb-2">全5ステージクリア！</h1>
+      <p class="text-xs text-slate-300 leading-relaxed mb-5">
+        ご回答ありがとうございました！送信された回答データはスプレッドシートへ自動記録されました。
+      </p>
+
+      <!-- 送信ステータス表示 -->
+      <div id="sendStatus" class="mb-4 text-xs font-bold py-2 px-3 rounded-xl bg-slate-900 border border-slate-700 text-slate-400 flex items-center justify-center gap-2">
+        <i class="fa-solid fa-spinner fa-spin text-indigo-400"></i> スプレッドシートへデータ送信中...
+      </div>
+
+      <!-- 個人回答サマリーカード -->
+      <div class="bg-slate-900 border border-slate-700 rounded-xl p-4 text-left mb-6 space-y-2 text-xs">
+        <div class="font-bold text-indigo-400 border-b border-slate-800 pb-1.5 flex justify-between items-center">
+          <span><i class="fa-solid fa-check-double mr-1"></i>あなたの回答完了証</span>
+          <span class="text-[10px] text-slate-500">STAMP COMPLETE</span>
+        </div>
+        <div class="text-slate-300 flex justify-between">
+          <span class="text-slate-500">AIワクワク度:</span>
+          <span id="summaryGauge" class="font-bold text-emerald-400">-%</span>
+        </div>
+        <div class="text-slate-300 flex justify-between">
+          <span class="text-slate-500">選択した未来の余白:</span>
+          <span id="summaryFuture" class="font-bold text-purple-400">-</span>
+        </div>
+      </div>
+
+      <button onclick="location.reload()" class="px-6 py-2.5 bg-slate-700 hover:bg-slate-600 text-slate-300 font-bold rounded-xl text-xs">
+        最初から回答しなおす
+      </button>
+    </div>
+
+  </main>
+
+  <script>
+    let currentStage = 1;
+    let s1Answer = "";
+    let s2Selected = new Set();
+    let s3Selected = new Set();
+    let customIdea = "";
+    let userGaugeVal = 0;
+    let userFutureVal = "";
+    let userStars = 5;
+
+    // 先ほど取得されたGASのURLをあらかじめ固定でセット（画面上の入力枠は非表示）
+    const gasWebAppUrl = "https://script.google.com/macros/s/AKfycbwi3R_ljLu3rrwXvZ_i9eUf51C-YxAtj_IqSg3fLqgQ_XG3w5A_b90X9eQyR3K1v4O4/exec";
+
+    // --- STAGE 2: リアル物理Canvas壁システム ---
+    const wallCanvas = document.getElementById('wallCanvas');
+    const wallCtx = wallCanvas ? wallCanvas.getContext('2d') : null;
+    let bricks = [];
+    let isWallInitialized = false;
+
+    function initWallCanvas() {
+      if (!wallCanvas || isWallInitialized) return;
+      
+      const dpr = window.devicePixelRatio || 1;
+      const rect = wallCanvas.getBoundingClientRect();
+      wallCanvas.width = rect.width * dpr;
+      wallCanvas.height = rect.height * dpr;
+      wallCtx.scale(dpr, dpr);
+
+      const rows = 5;
+      const cols = 8;
+      const brickW = (rect.width - 20) / cols;
+      const brickH = (rect.height - 20) / rows;
+      const startX = 10;
+      const startY = 10;
+
+      bricks = [];
+      for (let r = 0; r < rows; r++) {
+        for (let c = 0; c < cols; c++) {
+          const offset = (r % 2 === 0) ? 0 : brickW * 0.2;
+          bricks.push({
+            x: startX + c * brickW + offset,
+            y: startY + r * brickH,
+            w: brickW - 2,
+            h: brickH - 2,
+            vx: 0,
+            vy: 0,
+            angle: 0,
+            vAngle: 0,
+            isBroken: false,
+            color: (r + c) % 2 === 0 ? '#d97706' : '#b45309'
+          });
+        }
+      }
+      isWallInitialized = true;
+      requestAnimationFrame(renderWallPhysics);
+    }
+
+    function triggerWallBreak() {
+      const unbroken = bricks.filter(b => !b.isBroken);
+      if (unbroken.length === 0) return;
+
+      const targetCount = Math.min(8, unbroken.length);
+      for (let i = 0; i < targetCount; i++) {
+        const idx = Math.floor(Math.random() * unbroken.length);
+        const b = unbroken[idx];
+        b.isBroken = true;
+        b.vx = (Math.random() - 0.5) * 12;
+        b.vy = (Math.random() - 0.8) * 10;
+        b.vAngle = (Math.random() - 0.5) * 0.3;
+      }
+    }
+
+    function renderWallPhysics() {
+      if (!wallCtx) return;
+      const rect = wallCanvas.getBoundingClientRect();
+      wallCtx.clearRect(0, 0, rect.width, rect.height);
+
+      bricks.forEach(b => {
+        if (b.isBroken) {
+          b.x += b.vx;
+          b.y += b.vy;
+          b.vy += 0.45;
+          b.angle += b.vAngle;
+          b.vx *= 0.98;
+        }
+
+        wallCtx.save();
+        wallCtx.translate(b.x + b.w / 2, b.y + b.h / 2);
+        wallCtx.rotate(b.angle);
+
+        wallCtx.fillStyle = b.isBroken ? '#ef4444' : b.color;
+        wallCtx.fillRect(-b.w / 2, -b.h / 2, b.w, b.h);
+
+        if (!b.isBroken) {
+          wallCtx.strokeStyle = 'rgba(255, 255, 255, 0.25)';
+          wallCtx.lineWidth = 1;
+          wallCtx.strokeRect(-b.w / 2, -b.h / 2, b.w, b.h);
+        }
+
+        wallCtx.restore();
+      });
+
+      requestAnimationFrame(renderWallPhysics);
+    }
+
+    // ステージ切替関数
+    function nextStage(targetStage) {
+      document.getElementById(`stage${currentStage}`).classList.add('hidden');
+      currentStage = targetStage;
+      
+      const targetEl = document.getElementById(`stage${currentStage}`);
+      targetEl.classList.remove('hidden');
+      targetEl.classList.add('slide-in');
+
+      if (currentStage === 2) {
+        setTimeout(initWallCanvas, 100);
+      }
+
+      document.getElementById('progressText').innerText = `STAGE ${currentStage} / 5`;
+      document.getElementById('progressBar').style.width = `${(currentStage / 5) * 100}%`;
+    }
+
+    // STAGE 1 選択
+    function selectStage1(type, btn) {
+      document.querySelectorAll('#stage1 .option-btn').forEach(b => b.classList.remove('selected'));
+      btn.classList.add('selected');
+
+      const textMap = {
+        magic: "「魔法みたい！」自分でも作ってみたい",
+        potential: "可能性は感じるが、自校の制限が気になる",
+        calm: "なるほど〜と静かに感心した",
+        scared: "AIを活用するのはまだ怖い…"
+      };
+      s1Answer = textMap[type];
+
+      const gaugeMap = { magic: 95, potential: 70, calm: 45, scared: 20 };
+      userGaugeVal = gaugeMap[type];
+
+      document.getElementById('gaugeBar').style.width = `${userGaugeVal}%`;
+      document.getElementById('gaugeNum').innerText = `${userGaugeVal}%`;
+
+      const nextBtn = document.getElementById('btnStage1');
+      nextBtn.disabled = false;
+      nextBtn.className = "w-full mt-5 py-3 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white font-bold text-sm shadow-lg shadow-indigo-600/30 transition-all flex items-center justify-center gap-2";
+    }
+
+    // STAGE 2 選択（複数可＋物理破壊）
+    function toggleStage2(idx, btn) {
+      if (s2Selected.has(idx)) {
+        s2Selected.delete(idx);
+        btn.classList.remove('selected');
+      } else {
+        s2Selected.add(idx);
+        btn.classList.add('selected');
+        triggerWallBreak();
+      }
+
+      const nextBtn = document.getElementById('btnStage2');
+      if (s2Selected.size > 0) {
+        nextBtn.disabled = false;
+        nextBtn.className = "w-full mt-4 py-3 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white font-bold text-sm shadow-lg shadow-indigo-600/30 transition-all flex items-center justify-center gap-2";
+      } else {
+        nextBtn.disabled = true;
+        nextBtn.className = "w-full mt-4 py-3 rounded-xl bg-slate-700 text-slate-500 font-bold text-sm transition-all flex items-center justify-center gap-2";
+      }
+    }
+
+    // STAGE 3 選択（個人用カード錬成演出）
+    function toggleStage3(idx, btn) {
+      const labels = [
+        "💰 徴収金自動チェック",
+        "⏱️ 年休残数スマート管理",
+        "📦 備品予約スマホ化",
+        "💬 校内事務FAQチャット"
+      ];
+
+      if (s3Selected.has(idx)) {
+        s3Selected.delete(idx);
+        btn.classList.remove('selected');
+        removeForgeCard(`card-${idx}`);
+      } else {
+        s3Selected.add(idx);
+        btn.classList.add('selected');
+        addForgeCard(`card-${idx}`, labels[idx]);
+      }
+    }
+
+    function addCustomForge() {
+      const input = document.getElementById('freeInput');
+      const val = input.value.trim();
+      if (val !== '') {
+        customIdea = val;
+        const customId = `custom-${Date.now()}`;
+        addForgeCard(customId, `💡 ${val}`);
+        input.value = '';
+      }
+    }
+
+    function addForgeCard(id, text) {
+      const placeholder = document.getElementById('forgePlaceholder');
+      if (placeholder) placeholder.style.display = 'none';
+
+      const forgeBox = document.getElementById('forgeBox');
+      const card = document.createElement('div');
+      card.id = id;
+      card.className = 'forge-card bg-emerald-950 border border-emerald-600/60 text-emerald-300 text-xs font-bold px-3 py-1.5 rounded-lg flex items-center gap-1.5 shadow-md';
+      card.innerHTML = `<span>${text}</span> <i class="fa-solid fa-sparkles text-amber-300 text-[10px]"></i>`;
+      forgeBox.appendChild(card);
+    }
+
+    function removeForgeCard(id) {
+      const card = document.getElementById(id);
+      if (card) card.remove();
+
+      const forgeBox = document.getElementById('forgeBox');
+      if (forgeBox.children.length <= 1) {
+        const placeholder = document.getElementById('forgePlaceholder');
+        if (placeholder) placeholder.style.display = 'block';
+      }
+    }
+
+    // STAGE 4 選択（未来ツリー成長）
+    function selectStage4(fruitEmoji, label, btn) {
+      document.querySelectorAll('#stage4 .option-btn').forEach(b => b.classList.remove('selected'));
+      btn.classList.add('selected');
+
+      userFutureVal = label;
+      const fruit = document.getElementById('treeFruit');
+      fruit.innerText = fruitEmoji;
+      fruit.className = "text-3xl transition-all duration-500 scale-125 opacity-100";
+
+      const nextBtn = document.getElementById('btnStage4');
+      nextBtn.disabled = false;
+      nextBtn.className = "w-full mt-4 py-3 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white font-bold text-sm shadow-lg shadow-indigo-600/30 transition-all flex items-center justify-center gap-2";
+    }
+
+    // STAGE 5 選択
+    function selectStage5(stars, btn) {
+      document.querySelectorAll('#stage5 .option-btn').forEach(b => b.classList.remove('selected'));
+      btn.classList.add('selected');
+      userStars = stars;
+
+      const finishBtn = document.getElementById('btnStage5');
+      finishBtn.disabled = false;
+      finishBtn.className = "w-full py-3.5 rounded-xl bg-gradient-to-r from-pink-500 to-rose-500 hover:from-pink-600 hover:to-rose-600 text-white font-black text-sm shadow-lg shadow-pink-500/30 transition-all flex items-center justify-center gap-2";
+    }
+
+    // アンケート送信完了＋スプレッドシート送信＋紙吹雪演出
+    function finishSurvey() {
+      document.getElementById('stage5').classList.add('hidden');
+      document.getElementById('stageComplete').classList.remove('hidden');
+
+      document.getElementById('summaryGauge').innerText = `${userGaugeVal}%`;
+      document.getElementById('summaryFuture').innerText = userFutureVal || "未選択";
+
+      if (typeof confetti === 'function') {
+        confetti({
+          particleCount: 120,
+          spread: 80,
+          origin: { y: 0.6 }
+        });
+      }
+
+      // 回答データの整形
+      const s2Options = [
+        "セキュリティ＆個人情報の鉄壁",
+        "アクセス制限のネットワークの壁",
+        "「難しそう…」という心理的・操作の壁",
+        "精度・誤情報（ウソ）という信頼性の壁",
+        "特に壁はない！自由に使える"
+      ];
+      const s2Answers = Array.from(s2Selected).map(idx => s2Options[idx]).join(' / ');
+
+      const s3Options = [
+        "学校徴収金管理",
+        "服務・勤務管理",
+        "備品・施設予約",
+        "校内事務FAQチャットボット"
+      ];
+      let s3Answers = Array.from(s3Selected).map(idx => s3Options[idx]).join(' / ');
+      if (customIdea) s3Answers += ` / 自由投稿: ${customIdea}`;
+
+      const payload = {
+        timestamp: new Date().toLocaleString('ja-JP'),
+        stage1: s1Answer,
+        stage1_gauge: `${userGaugeVal}%`,
+        stage2_walls: s2Answers || "選択なし",
+        stage3_ideas: s3Answers || "選択なし",
+        stage4_future: userFutureVal,
+        stage5_rating: `星 ${userStars}`
+      };
+
+      sendToGoogleSheet(payload);
+    }
+
+    // Googleスプレッドシート(GAS)へのデータ非同期送信
+    function sendToGoogleSheet(payload) {
+      const statusEl = document.getElementById('sendStatus');
+
+      fetch(gasWebAppUrl, {
+        method: 'POST',
+        mode: 'no-cors',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
+      })
+      .then(() => {
+        statusEl.className = "mb-4 text-xs font-bold py-2 px-3 rounded-xl bg-emerald-950/80 border border-emerald-700 text-emerald-300 flex items-center justify-center gap-2";
+        statusEl.innerHTML = `<i class="fa-solid fa-circle-check text-emerald-400"></i> スプレッドシートへ自動保存完了！`;
+      })
+      .catch((err) => {
+        console.error(err);
+        statusEl.className = "mb-4 text-xs font-bold py-2 px-3 rounded-xl bg-rose-950/80 border border-rose-700 text-rose-300 flex items-center justify-center gap-2";
+        statusEl.innerHTML = `<i class="fa-solid fa-circle-xmark text-rose-400"></i> 送信エラーが発生しました`;
+      });
+    }
+  </script>
+</body>
+</html>
